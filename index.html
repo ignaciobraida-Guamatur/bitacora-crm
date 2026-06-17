@@ -109,6 +109,13 @@
   .foto-extracted{background:#fff;border:1px solid var(--linea);border-radius:11px;padding:12px 14px;margin-top:14px}
   .fe-hd{font-size:12px;font-weight:800;margin-bottom:9px}
   .fe-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-top:1px solid var(--linea)} .fe-row:first-of-type{border-top:none}
+  .dia-group{margin-bottom:18px}
+  .dia-gh{font-size:12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--gris);margin:0 0 9px}
+  .dia-row{background:#fff;border:1px solid var(--linea);border-radius:11px;padding:11px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer}
+  .dia-row:hover{box-shadow:var(--sombra);border-color:#ddd6c8}
+  .dia-main{flex:1;min-width:0} .dia-main b{font-size:13.5px}
+  .dia-acc{font-size:12px;color:var(--tinta);margin-top:2px} .dia-acc b{color:var(--rojo)}
+  .dia-go{color:var(--gris);font-weight:800;font-size:16px}
   @media(max-width:900px){.osom-leads{grid-template-columns:1fr}}
 
   .board{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;align-items:start}
@@ -249,12 +256,18 @@
   <!-- ===== VENDEDOR ===== -->
   <div id="app-vend" class="app on">
     <div class="subtabs" id="vend-tabs">
-      <button class="subtab on" data-vpane="pipeline">Mi pipeline</button>
+      <button class="subtab on" data-vpane="dia">📌 Mi día</button>
+      <button class="subtab" data-vpane="pipeline">Mi pipeline</button>
       <button class="subtab" data-vpane="posventa">Posventa</button>
-      <button class="subtab" data-vpane="saldos">Saldos a cobrar</button>
+      <button class="subtab" data-vpane="admin">Administración</button>
     </div>
 
-    <section id="vpane-pipeline" class="vpane on">
+    <section id="vpane-dia" class="vpane on">
+      <div class="kpis" id="dia-kpis" style="grid-template-columns:repeat(4,1fr)"></div>
+      <div id="dia-list"></div>
+    </section>
+
+    <section id="vpane-pipeline" class="vpane">
       <div class="toolbar">
         <span class="sub" id="vend-sub"></span>
         <div class="vtoggle"><button class="vt on" data-view="board">▦ Tablero</button><button class="vt" data-view="list">≣ Lista</button></div>
@@ -273,7 +286,11 @@
       <div id="pv-list"></div>
     </section>
 
-    <section id="vpane-saldos" class="vpane">
+    <section id="vpane-admin" class="vpane">
+      <h3 style="margin:6px 0 12px;font-size:15px;font-weight:800">Mis comisiones</h3>
+      <div class="kpis" id="com-kpis" style="grid-template-columns:repeat(4,1fr)"></div>
+      <p class="hint" style="margin:8px 0 24px">Estimación sobre el valor de la venta (ejemplo: 4 %). En producción saldría de las comisiones del BOK por fecha de viaje.</p>
+      <h3 style="margin:6px 0 12px;font-size:15px;font-weight:800">Saldos a cobrar</h3>
       <div class="kpis" id="sa-kpis" style="grid-template-columns:repeat(4,1fr)"></div>
       <div class="framing">Saldos a cobrar de ventas ya hechas. El vencimiento se ata a la <b>fecha de viaje</b>: si el pasajero viaja y todavía debe, hay que cobrar antes. <i>(modelo del proyecto de saldos: estimado − cobrado = saldo)</i></div>
       <div class="panel"><div class="hd">Mis cobranzas <span class="count" id="sa-count"></span></div>
@@ -535,7 +552,7 @@ let UNASSIGNED = [
 ];
 const nextId = () => Math.max(...OPP.map(o=>o.id))+1;
 
-let rol="vend", curV="val", vendView="board", vendPane="pipeline", charts={};
+let rol="vend", curV="val", vendView="board", vendPane="dia", charts={};
 function toast(msg){ $("#toast-t").textContent=msg; $("#toast").classList.add("on"); clearTimeout(window._tt); window._tt=setTimeout(()=>$("#toast").classList.remove("on"),2600); }
 
 VEND.forEach(v=>{ const o=document.createElement("option"); o.value=v.id; o.textContent=v.nom; $("#vendSel").appendChild(o); });
@@ -589,8 +606,10 @@ function renderVend(){
   renderList(mine);
   $("#board").style.display = vendView==="board" ? "grid" : "none";
   $("#list").style.display  = vendView==="list" ? "block" : "none";
+  renderDia(mine);
   renderPosventa(mine);
   renderSaldos(mine);
+  renderComisiones(mine);
 }
 
 /* ---- Leads sin asignar (OSOM / chat web) ---- */
@@ -634,7 +653,7 @@ function renderPosventa(mine){
       : (o.fviaje<=SOON_DAYS?`<span class="soon">✈ viaja en ${o.fviaje}d</span>`:`<span class="viaje">✈ viaja en ${o.fviaje}d</span>`);
     return `<div class="pv-row">
       <div class="pv-hd"><b>${o.tipo==="Corporativo"?"🏛️ ":""}${esc(o.cli)}</b> <span class="mini">${esc(o.dest)} · ${o.pax} pax · ${usd(o.monto)}</span> ${tag}
-        <button class="btn ghost pv-open" style="margin-left:auto;padding:5px 11px;font-size:12px" data-opp="${o.id}">Abrir</button></div>
+        <span style="margin-left:auto;display:flex;gap:6px"><button class="btn ghost pv-ref" style="padding:5px 11px;font-size:12px" data-opp="${o.id}">🤝 Referido</button><button class="btn ghost pv-open" style="padding:5px 11px;font-size:12px" data-opp="${o.id}">Abrir</button></span></div>
       <div class="pv-chips">${chips}</div>
     </div>`;
   }).join("") : `<div style="padding:30px;text-align:center;color:var(--gris)">Todavía no hay ventas ganadas.</div>`;
@@ -644,6 +663,7 @@ function renderPosventa(mine){
     renderVend();
   });
   $$("#pv-list .pv-open").forEach(b=>b.onclick=()=>openDet(+b.dataset.opp));
+  $$("#pv-list .pv-ref").forEach(b=>b.onclick=()=>openReferido(OPP.find(x=>x.id===+b.dataset.opp)));
 }
 
 /* ---- SALDOS A COBRAR: modelo real (estimado − cobrado = saldo, vencimiento = fecha de viaje) ---- */
@@ -684,6 +704,57 @@ function renderSaldos(mine){
     o.act.unshift({off:0,tipo:"llamada",nota:"Ofreció y contrató seguro de asistencia (upsell)."});
     toast(`Seguro agregado a “${o.cli}” · upsell cerrado`); renderVend();
   });
+}
+
+/* ---- MI DÍA: agenda accionable del vendedor ---- */
+function renderDia(mine){
+  const atras  = mine.filter(o=>isActiva(o)&&diasSinContacto(o)>STALE_DAYS).sort((a,b)=>diasSinContacto(b)-diasSinContacto(a));
+  const pronto = mine.filter(o=>isActiva(o)&&o.etapa!=="reserva"&&o.fviaje>=0&&o.fviaje<=SOON_DAYS).sort((a,b)=>a.fviaje-b.fviaje);
+  const saldos = mine.filter(o=>(o.etapa==="reserva"||o.etapa==="ganada")&&(o.monto-(o.cobrado||0))>0.5&&o.fviaje<=10).sort((a,b)=>a.fviaje-b.fviaje);
+  const pv     = mine.filter(o=>o.etapa==="ganada"&&o.fviaje<0&&!(o.pv||[]).includes("recompra"));
+  const total  = atras.length+pronto.length+saldos.length+pv.length;
+  $("#dia-kpis").innerHTML=[
+    kpiHTML(total, "Cosas para hacer hoy", "", total?"warn":"ok"),
+    kpiHTML(atras.length, "Seguimientos atrasados", "", atras.length?"rojo":""),
+    kpiHTML(pronto.length, "Viajan pronto sin reservar"),
+    kpiHTML(saldos.length, "Saldos por cobrar", "", saldos.length?"warn":""),
+  ].join("");
+  const grupo=(t,ico,items,fn)=> items.length?`<div class="dia-group"><div class="dia-gh">${ico} ${t} <span class="mini" style="font-weight:600">· ${items.length}</span></div>${items.map(fn).join("")}</div>`:"";
+  const fila=(o,accion,badge)=>`<div class="dia-row" data-opp="${o.id}"><div class="dia-main"><b>${esc(o.cli)}</b> <span class="mini">${esc(o.dest)}</span><div class="dia-acc">→ ${accion}</div></div>${badge||""}<span class="dia-go">›</span></div>`;
+  const html =
+    grupo("Seguimientos atrasados","⏰",atras,o=>{const d=diasSinContacto(o);return fila(o,`Retomá — <b>${d} días</b> sin contacto`,`<span class="stale ${d>9?'bad':''}">${d}d</span>`);}) +
+    grupo("Viajan pronto sin reservar","✈",pronto,o=>fila(o,`Cerrá: viaja en <b>${o.fviaje} días</b>`,`<span class="soon">${o.fviaje}d</span>`)) +
+    grupo("Saldos por cobrar","💵",saldos,o=>{const s=o.monto-(o.cobrado||0);return fila(o,`Cobrar saldo de <b>${usd(s)}</b>`, o.fviaje<0?`<span class="stale bad">vencido</span>`:`<span class="stale">en ${o.fviaje}d</span>`);}) +
+    grupo("Posventa / recompra","🔁",pv,o=>fila(o,`Viajó hace ${-o.fviaje}d: pedí reseña y ofrecé el próximo viaje`,`<span class="soon" style="background:var(--ok)">recompra</span>`));
+  $("#dia-list").innerHTML = total ? html : `<div style="padding:40px;text-align:center;color:var(--gris)">🎉 Estás al día — nada pendiente para hoy.</div>`;
+  $$("#dia-list .dia-row").forEach(r=>r.onclick=()=>openDet(+r.dataset.opp));
+}
+
+/* ---- COMISIONES del vendedor (ejemplo % sobre la venta) ---- */
+function renderComisiones(mine){
+  const RATE=0.04;
+  const ganadas=mine.filter(o=>o.etapa==="ganada");
+  const activas=mine.filter(isActiva);
+  const proxViaje=mine.filter(o=>(o.etapa==="reserva"||o.etapa==="ganada")&&o.fviaje>=0&&o.fviaje<=SOON_DAYS);
+  const cMes=ganadas.reduce((s,o)=>s+o.monto*RATE,0);
+  const cPipe=activas.reduce((s,o)=>s+o.monto*RATE,0);
+  const cProx=proxViaje.reduce((s,o)=>s+o.monto*RATE,0);
+  $("#com-kpis").innerHTML=[
+    kpiHTML(usd(cMes), "Comisión del mes", ganadas.length+" ventas ganadas","ok"),
+    kpiHTML(usd(cPipe), "En pipeline", "si cierra todo lo activo"),
+    kpiHTML(usd(cProx), "Por confirmar", "viajan pronto"),
+    kpiHTML(usd(ganadas.reduce((s,o)=>s+o.monto,0)), "Ventas del mes"),
+  ].join("");
+}
+
+/* ---- Referido → nueva oportunidad ---- */
+function openReferido(o){
+  ["nf-cli","nf-dest","nf-monto","nf-paste"].forEach(i=>{ const el=$("#"+i); if(el) el.value=""; });
+  $("#nf-next").value="Referido por "+o.cli+" (viajó a "+o.dest+").";
+  $("#nf-chan").value="referido"; $("#nf-pax").value=2; $("#nf-tipo").value="Particular";
+  const fv=$("#nf-fviaje"); if(fv) fv.value="";
+  $("#scrim-new").classList.add("on"); setTimeout(()=>$("#nf-cli").focus(),60);
+  toast(`Nuevo referido de ${o.cli} — completá el nombre`);
 }
 
 /* ---- vista LISTA (alternativa al kanban; para comparar) ---- */
