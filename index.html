@@ -292,7 +292,6 @@
       <button class="subtab on" data-vpane="dia">📌 Mi día</button>
       <button class="subtab" data-vpane="pipeline">Mi pipeline</button>
       <button class="subtab" data-vpane="posventa">Posventa</button>
-      <button class="subtab" data-vpane="viajes">✈ Viajes</button>
       <button class="subtab" data-vpane="admin">Administración</button>
     </div>
 
@@ -324,12 +323,6 @@
       <div class="kpis" id="pv-kpis" style="grid-template-columns:repeat(4,1fr)"></div>
       <div class="framing">El viaje no termina en la venta. Acá cerrás el ciclo: documentación, seguro, check-in, asistencia — y la <b>recompra</b> (el cliente que ya viajó es tu mejor próximo cliente).</div>
       <div id="pv-list"></div>
-    </section>
-
-    <section id="vpane-viajes" class="vpane">
-      <div class="kpis" id="vj-kpis" style="grid-template-columns:repeat(4,1fr)"></div>
-      <div class="framing">Tus viajes próximos por fecha de salida — para que ninguno salga sin reservar, con saldo pendiente o sin check-in.</div>
-      <div id="vj-list"></div>
     </section>
 
     <section id="vpane-admin" class="vpane">
@@ -698,7 +691,6 @@ function renderVend(){
   $("#board").style.display = vendView==="board" ? "grid" : "none";
   $("#list").style.display  = vendView==="list" ? "block" : "none";
   renderDia(mine);
-  renderViajes(mine);
   renderPosventa(mine);
   renderSaldos(mine);
   renderComisiones(mine);
@@ -848,29 +840,6 @@ function openReferido(o){
   const fv=$("#nf-fviaje"); if(fv) fv.value="";
   $("#scrim-new").classList.add("on"); setTimeout(()=>$("#nf-cli").focus(),60);
   toast(`Nuevo referido de ${o.cli} — completá el nombre`);
-}
-
-/* ---- PRÓXIMOS VIAJES (timeline por fecha de salida) ---- */
-function renderViajes(mine){
-  const up=mine.filter(o=>o.etapa!=="perdida"&&o.fviaje>=0).sort((a,b)=>a.fviaje-b.fviaje);
-  const semana=up.filter(o=>o.fviaje<=7), mes=up.filter(o=>o.fviaje>7&&o.fviaje<=30), lejos=up.filter(o=>o.fviaje>30);
-  const sinReserva=up.filter(o=>isActiva(o)&&o.etapa!=="reserva").length;
-  const conSaldo=up.filter(o=>(o.etapa==="reserva"||o.etapa==="ganada")&&(o.monto-(o.cobrado||0))>0.5).length;
-  $("#vj-kpis").innerHTML=[
-    kpiHTML(semana.length,"Viajan esta semana","", semana.length?"warn":""),
-    kpiHTML(mes.length,"Próximos 30 días"),
-    kpiHTML(sinReserva,"Sin reservar","urgencia de cupo", sinReserva?"rojo":""),
-    kpiHTML(conSaldo,"Con saldo pendiente","", conSaldo?"warn":""),
-  ].join("");
-  const flags=o=>{ const f=[]; const s=o.monto-(o.cobrado||0);
-    if(isActiva(o)&&o.etapa!=="reserva") f.push(`<span class="soon" style="background:var(--rojo)">sin reservar</span>`);
-    if((o.etapa==="reserva"||o.etapa==="ganada")&&s>0.5) f.push(`<span class="stale">saldo ${usd(s)}</span>`);
-    if(o.etapa==="ganada"&&o.fviaje<=7&&!(o.pv||[]).includes("checkin")) f.push(`<span class="soon">check-in</span>`);
-    return f.join(" "); };
-  const fila=o=>`<div class="dia-row" data-opp="${o.id}"><div class="dia-main"><b>${esc(o.cli)}</b> <span class="mini">${esc(o.dest)}</span><div class="dia-acc"><span class="pill" style="background:${STAGE[o.etapa].color}">${STAGE[o.etapa].t}</span> ${flags(o)}</div></div><span class="vj-when">${o.fviaje===0?"hoy":"en "+o.fviaje+"d"}</span><span class="dia-go">›</span></div>`;
-  const grupo=(t,items)=> items.length?`<div class="dia-group"><div class="dia-gh">${t} <span class="mini" style="font-weight:600">· ${items.length}</span></div>${items.map(fila).join("")}</div>`:"";
-  $("#vj-list").innerHTML = up.length ? grupo("✈ Esta semana",semana)+grupo("Próximos 30 días",mes)+grupo("Más adelante",lejos) : `<div style="padding:40px;text-align:center;color:var(--gris)">No hay viajes próximos cargados.</div>`;
-  $$("#vj-list .dia-row").forEach(r=>r.onclick=()=>openDet(+r.dataset.opp));
 }
 
 /* ---- Notificaciones (campana) ---- */
