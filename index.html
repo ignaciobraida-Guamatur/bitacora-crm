@@ -116,6 +116,36 @@
   .dia-main{flex:1;min-width:0} .dia-main b{font-size:13.5px}
   .dia-acc{font-size:12px;color:var(--tinta);margin-top:2px} .dia-acc b{color:var(--rojo)}
   .dia-go{color:var(--gris);font-weight:800;font-size:16px}
+  .gsearch{position:relative;margin:18px 0 2px;max-width:440px}
+  .gsearch input{width:100%;padding:10px 14px;border:1px solid var(--linea);border-radius:10px;font-family:inherit;font-size:14px;background:#fff;color:var(--tinta)}
+  .gsearch input:focus{outline:none;border-color:var(--rojo)}
+  .gs-res{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--linea);border-radius:10px;box-shadow:var(--sombra);margin-top:4px;z-index:40;overflow:hidden;display:none}
+  .gs-res.on{display:block}
+  .gs-item{padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--linea);font-size:13px}
+  .gs-item:last-child{border-bottom:none} .gs-item:hover{background:#fdfbf7} .gs-item .mini{margin-left:auto}
+  .pfilters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 16px}
+  .pfilters select{padding:8px 11px;border:1px solid var(--linea);border-radius:9px;font-family:inherit;font-size:13px;background:#fff;color:var(--tinta)}
+  .pfilters select:focus{outline:none;border-color:var(--rojo)}
+  .clearf{background:none;border:none;color:var(--rojo);font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}
+  .bell{position:relative;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);color:#fff;width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:15px;flex:0 0 auto;display:flex;align-items:center;justify-content:center}
+  .bell-badge{position:absolute;top:-5px;right:-5px;background:#fff;color:var(--rojo);font-size:10px;font-weight:800;border-radius:999px;min-width:17px;height:17px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+  .bell-badge:empty{display:none}
+  .notif{position:absolute;top:100%;right:24px;width:300px;background:#fff;border:1px solid var(--linea);border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.25);z-index:70;overflow:hidden;display:none;color:var(--tinta);margin-top:6px}
+  .notif.on{display:block}
+  .notif-hd{padding:12px 15px;font-weight:800;font-size:13px;border-bottom:1px solid var(--linea)}
+  .notif-item{padding:11px 15px;border-bottom:1px solid var(--linea);cursor:pointer;display:flex;align-items:center;gap:9px;font-size:13px}
+  .notif-item:last-child{border-bottom:none} .notif-item:hover{background:#fdfbf7}
+  .notif-n{margin-left:auto;font-weight:800;background:#f3eee3;border-radius:999px;padding:1px 8px;font-size:12px}
+  .vj-when{font-size:12px;font-weight:800;color:var(--gris);white-space:nowrap}
+  .hist{background:#fff;border:1px solid var(--linea);border-radius:11px;padding:12px 14px;margin-bottom:14px}
+  .hist-hd{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--gris);margin-bottom:6px}
+  .hist-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--linea)}
+  .hist-row:first-of-type{border-top:none}
+  .hist-monto{font-weight:800;font-size:13.5px;white-space:nowrap}
+  .prev{background:#fff;border:1px solid var(--linea);border-radius:11px;padding:4px 14px;margin-bottom:16px}
+  .prev summary{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--gris);cursor:pointer;padding:9px 0;list-style:none}
+  .prev summary::-webkit-details-marker{display:none}
+  .prev summary::before{content:"▸ ";color:var(--rojo)} .prev[open] summary::before{content:"▾ "}
   @media(max-width:900px){.osom-leads{grid-template-columns:1fr}}
 
   .board{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;align-items:start}
@@ -243,22 +273,26 @@
       <select id="vendSel" aria-label="Vendedor"></select>
       <span class="avatar" id="vendAv">V</span>
     </div>
+    <button class="bell" id="bell" aria-label="Notificaciones">🔔<span class="bell-badge" id="bell-badge"></span></button>
     <div class="role" role="tablist" aria-label="Rol">
       <button id="r-vend" class="on" role="tab">Vendedor</button>
       <button id="r-admin" role="tab">Gerencia</button>
     </div>
     <span class="badge-proto">MAQUETA · datos de ejemplo</span>
   </div>
+  <div class="notif" id="notif"></div>
 </header>
 <div class="legend">Estado de cada función en esta maqueta: <span class="seal on">online hoy</span> ya funciona · <span class="seal pil">piloto</span> factible, a construir · <span class="seal sim">simulado</span> demo visual</div>
 
 <div class="wrap">
   <!-- ===== VENDEDOR ===== -->
   <div id="app-vend" class="app on">
+    <div class="gsearch"><input id="gs-input" placeholder="🔍 Buscar cliente o destino…" autocomplete="off"><div id="gs-res" class="gs-res"></div></div>
     <div class="subtabs" id="vend-tabs">
       <button class="subtab on" data-vpane="dia">📌 Mi día</button>
       <button class="subtab" data-vpane="pipeline">Mi pipeline</button>
       <button class="subtab" data-vpane="posventa">Posventa</button>
+      <button class="subtab" data-vpane="viajes">✈ Viajes</button>
       <button class="subtab" data-vpane="admin">Administración</button>
     </div>
 
@@ -276,6 +310,12 @@
           <button class="btn primary" id="btn-nueva">＋ Nueva oportunidad</button>
         </div>
       </div>
+      <div class="pfilters">
+        <select id="pf-dest"><option value="">Todos los destinos</option></select>
+        <select id="pf-chan"><option value="">Todos los canales</option></select>
+        <select id="pf-prio"><option value="">Toda prioridad</option><option value="alta">Prioridad alta</option><option value="media">Prioridad media</option><option value="baja">Prioridad baja</option></select>
+        <button class="clearf" id="pf-clear">Limpiar filtros</button>
+      </div>
       <div class="board" id="board"></div>
       <div id="list" style="display:none"></div>
     </section>
@@ -284,6 +324,12 @@
       <div class="kpis" id="pv-kpis" style="grid-template-columns:repeat(4,1fr)"></div>
       <div class="framing">El viaje no termina en la venta. Acá cerrás el ciclo: documentación, seguro, check-in, asistencia — y la <b>recompra</b> (el cliente que ya viajó es tu mejor próximo cliente).</div>
       <div id="pv-list"></div>
+    </section>
+
+    <section id="vpane-viajes" class="vpane">
+      <div class="kpis" id="vj-kpis" style="grid-template-columns:repeat(4,1fr)"></div>
+      <div class="framing">Tus viajes próximos por fecha de salida — para que ninguno salga sin reservar, con saldo pendiente o sin check-in.</div>
+      <div id="vj-list"></div>
     </section>
 
     <section id="vpane-admin" class="vpane">
@@ -329,6 +375,10 @@
         <div class="card">
           <h3>Por qué se cae la plata <span class="sub">· motivos de oportunidades perdidas</span></h3>
           <div class="chart-box"><canvas id="ch-motivos"></canvas></div>
+        </div>
+        <div class="card full">
+          <h3>Evolución del equipo <span class="sub">· actividad y ventas, últimos 6 meses</span></h3>
+          <div class="chart-box" style="height:230px"><canvas id="ch-evo"></canvas></div>
         </div>
       </div>
       <div class="note" id="insight"></div>
@@ -552,7 +602,24 @@ let UNASSIGNED = [
 ];
 const nextId = () => Math.max(...OPP.map(o=>o.id))+1;
 
-let rol="vend", curV="val", vendView="board", vendPane="dia", charts={};
+const EVOLUCION = [
+  {mes:"Ene", act:142, ventas:38000}, {mes:"Feb", act:158, ventas:45000}, {mes:"Mar", act:171, ventas:52000},
+  {mes:"Abr", act:165, ventas:49000}, {mes:"May", act:189, ventas:61000}, {mes:"Jun", act:204, ventas:68000},
+];
+/* historial de cotizaciones + viajes anteriores (ejemplos por oportunidad) */
+const HIST_OVR = {
+  1:{cotis:[{fecha:"hace 4 días",monto:6200,nota:"Opción all-inclusive (2 hoteles)"},{fecha:"hace 3 días",monto:5800,nota:"Alternativa más económica"},{fecha:"hace 1 día",monto:6450,nota:"Con upgrade a vista al mar"}], previos:[{anio:2024,dest:"Brasil — Florianópolis",monto:3200,pax:4},{anio:2022,dest:"Bariloche",monto:2100,pax:4}]},
+  13:{cotis:[{fecha:"hace 4 días",monto:5100,nota:"7 noches all-inclusive"},{fecha:"hace 2 días",monto:4800,nota:"Sin traslados premium"}], previos:[{anio:2023,dest:"Caribe — Punta Cana",monto:4600,pax:2}]},
+  3:{cotis:[{fecha:"hace 5 días",monto:4500,nota:"Cancún 7 noches"}], previos:[{anio:2024,dest:"Caribe — Aruba",monto:5000,pax:2},{anio:2021,dest:"Miami",monto:3800,pax:2}]},
+  9:{cotis:[{fecha:"hace 5 días",monto:11200,nota:"Familiar 5 pax, 2 parques"},{fecha:"hace 3 días",monto:10800,nota:"1 parque + día libre"}], previos:[]},
+  8:{cotis:[{fecha:"hace 2 días",monto:4200,nota:"All-inclusive 7 noches"}], previos:[{anio:2022,dest:"Brasil — Buzios",monto:2400,pax:2}]},
+  30:{previos:[{anio:2023,dest:"Brasil — Río",monto:2600,pax:4}]},
+  31:{previos:[{anio:2024,dest:"Europa — feria",monto:9200,pax:3},{anio:2023,dest:"Miami — evento",monto:8000,pax:3}]},
+};
+OPP.forEach(o=>{ const h=HIST_OVR[o.id]; if(h){ if(h.cotis) o.cotis=h.cotis; if(h.previos) o.previos=h.previos; } });
+
+let rol="vend", curV="val", vendView="board", vendPane="dia", charts={}, pFilter={dest:"",chan:"",prio:""};
+const pipeFiltered = arr => arr.filter(o=> (!pFilter.dest||o.dest===pFilter.dest) && (!pFilter.chan||o.chan===pFilter.chan) && (!pFilter.prio||o.prio===pFilter.prio));
 function toast(msg){ $("#toast-t").textContent=msg; $("#toast").classList.add("on"); clearTimeout(window._tt); window._tt=setTimeout(()=>$("#toast").classList.remove("on"),2600); }
 
 VEND.forEach(v=>{ const o=document.createElement("option"); o.value=v.id; o.textContent=v.nom; $("#vendSel").appendChild(o); });
@@ -566,12 +633,35 @@ function setRol(r){
   $("#app-vend").classList.toggle("on", r==="vend");
   $("#app-admin").classList.toggle("on", r==="admin");
   $("#who-vend").style.display = r==="vend" ? "flex" : "none";
+  const bell=$("#bell"); if(bell) bell.style.display = r==="vend" ? "flex" : "none";
+  if(r!=="vend"){ const nf=$("#notif"); if(nf) nf.classList.remove("on"); }
   if(r==="admin") renderAdmin(); else renderVend();
 }
 $("#r-vend").onclick=()=>setRol("vend");
 $("#r-admin").onclick=()=>setRol("admin");
 $$(".vt").forEach(b=>b.onclick=()=>{ vendView=b.dataset.view; $$(".vt").forEach(x=>x.classList.toggle("on",x===b)); renderVend(); });
 $$("#vend-tabs .subtab").forEach(t=>t.onclick=()=>{ vendPane=t.dataset.vpane; $$("#vend-tabs .subtab").forEach(x=>x.classList.toggle("on",x===t)); $$(".vpane").forEach(p=>p.classList.remove("on")); $("#vpane-"+vendPane).classList.add("on"); });
+
+/* filtros del pipeline */
+[...new Set(OPP.map(o=>o.dest))].sort().forEach(d=>{const o=document.createElement("option");o.value=d;o.textContent=d;$("#pf-dest").appendChild(o);});
+Object.keys(CHAN).forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=CHAN[c].t;$("#pf-chan").appendChild(o);});
+$("#pf-dest").onchange=e=>{pFilter.dest=e.target.value;renderVend();};
+$("#pf-chan").onchange=e=>{pFilter.chan=e.target.value;renderVend();};
+$("#pf-prio").onchange=e=>{pFilter.prio=e.target.value;renderVend();};
+$("#pf-clear").onclick=()=>{pFilter={dest:"",chan:"",prio:""};$("#pf-dest").value="";$("#pf-chan").value="";$("#pf-prio").value="";renderVend();};
+/* buscador global */
+$("#gs-input").oninput=e=>{
+  const q=e.target.value.trim().toLowerCase(), box=$("#gs-res");
+  if(q.length<2){box.classList.remove("on");box.innerHTML="";return;}
+  const res=OPP.filter(o=>o.v===curV&&(o.cli.toLowerCase().includes(q)||o.dest.toLowerCase().includes(q))).slice(0,8);
+  box.innerHTML = res.length? res.map(o=>`<div class="gs-item" data-opp="${o.id}"><b>${esc(o.cli)}</b><span class="mini">${esc(o.dest)} · ${STAGE[o.etapa].t}</span></div>`).join("") : `<div class="gs-item" style="cursor:default;color:var(--gris)">Sin resultados</div>`;
+  box.classList.add("on");
+};
+$("#gs-res").addEventListener("click",e=>{const it=e.target.closest(".gs-item[data-opp]");if(it){openDet(+it.dataset.opp);$("#gs-res").classList.remove("on");$("#gs-input").value="";}});
+/* campana */
+$("#bell").onclick=e=>{e.stopPropagation();$("#notif").classList.toggle("on");};
+$("#notif").addEventListener("click",e=>{if(e.target.closest("[data-go]")){goVendPane("dia");$("#notif").classList.remove("on");}});
+document.addEventListener("click",e=>{ if(!e.target.closest(".gsearch")) $("#gs-res").classList.remove("on"); if(!e.target.closest("#notif")&&!e.target.closest("#bell")) $("#notif").classList.remove("on"); });
 
 /* ===================== VENDEDOR (kanban) ===================== */
 function renderVend(){
@@ -583,9 +673,10 @@ function renderVend(){
   const riesgo=mine.filter(o=>isActiva(o)&&diasSinContacto(o)>STALE_DAYS).length;
   $("#vend-sub").innerHTML = `${activas} oportunidades activas · ${usd(pipe)} en pipeline · ${actSemanaVend(curV)} contactos esta semana`
     + (riesgo?` · <b style="color:var(--rojo)">${riesgo} sin seguimiento</b>`:"");
+  const pipeShown=pipeFiltered(mine);
   const board=$("#board"); board.innerHTML="";
   STAGES.forEach(st=>{
-    const items=mine.filter(o=>o.etapa===st.id);
+    const items=pipeShown.filter(o=>o.etapa===st.id);
     const monto=items.reduce((s,o)=>s+o.monto,0);
     const col=document.createElement("div"); col.className="col"; col.dataset.stage=st.id;
     col.innerHTML=`<div class="col-hd"><span class="dot" style="background:${st.color}"></span>
@@ -603,13 +694,15 @@ function renderVend(){
     });
     board.appendChild(col);
   });
-  renderList(mine);
+  renderList(pipeShown);
   $("#board").style.display = vendView==="board" ? "grid" : "none";
   $("#list").style.display  = vendView==="list" ? "block" : "none";
   renderDia(mine);
+  renderViajes(mine);
   renderPosventa(mine);
   renderSaldos(mine);
   renderComisiones(mine);
+  renderNotif();
 }
 
 /* ---- Leads sin asignar (OSOM / chat web) ---- */
@@ -757,6 +850,43 @@ function openReferido(o){
   toast(`Nuevo referido de ${o.cli} — completá el nombre`);
 }
 
+/* ---- PRÓXIMOS VIAJES (timeline por fecha de salida) ---- */
+function renderViajes(mine){
+  const up=mine.filter(o=>o.etapa!=="perdida"&&o.fviaje>=0).sort((a,b)=>a.fviaje-b.fviaje);
+  const semana=up.filter(o=>o.fviaje<=7), mes=up.filter(o=>o.fviaje>7&&o.fviaje<=30), lejos=up.filter(o=>o.fviaje>30);
+  const sinReserva=up.filter(o=>isActiva(o)&&o.etapa!=="reserva").length;
+  const conSaldo=up.filter(o=>(o.etapa==="reserva"||o.etapa==="ganada")&&(o.monto-(o.cobrado||0))>0.5).length;
+  $("#vj-kpis").innerHTML=[
+    kpiHTML(semana.length,"Viajan esta semana","", semana.length?"warn":""),
+    kpiHTML(mes.length,"Próximos 30 días"),
+    kpiHTML(sinReserva,"Sin reservar","urgencia de cupo", sinReserva?"rojo":""),
+    kpiHTML(conSaldo,"Con saldo pendiente","", conSaldo?"warn":""),
+  ].join("");
+  const flags=o=>{ const f=[]; const s=o.monto-(o.cobrado||0);
+    if(isActiva(o)&&o.etapa!=="reserva") f.push(`<span class="soon" style="background:var(--rojo)">sin reservar</span>`);
+    if((o.etapa==="reserva"||o.etapa==="ganada")&&s>0.5) f.push(`<span class="stale">saldo ${usd(s)}</span>`);
+    if(o.etapa==="ganada"&&o.fviaje<=7&&!(o.pv||[]).includes("checkin")) f.push(`<span class="soon">check-in</span>`);
+    return f.join(" "); };
+  const fila=o=>`<div class="dia-row" data-opp="${o.id}"><div class="dia-main"><b>${esc(o.cli)}</b> <span class="mini">${esc(o.dest)}</span><div class="dia-acc"><span class="pill" style="background:${STAGE[o.etapa].color}">${STAGE[o.etapa].t}</span> ${flags(o)}</div></div><span class="vj-when">${o.fviaje===0?"hoy":"en "+o.fviaje+"d"}</span><span class="dia-go">›</span></div>`;
+  const grupo=(t,items)=> items.length?`<div class="dia-group"><div class="dia-gh">${t} <span class="mini" style="font-weight:600">· ${items.length}</span></div>${items.map(fila).join("")}</div>`:"";
+  $("#vj-list").innerHTML = up.length ? grupo("✈ Esta semana",semana)+grupo("Próximos 30 días",mes)+grupo("Más adelante",lejos) : `<div style="padding:40px;text-align:center;color:var(--gris)">No hay viajes próximos cargados.</div>`;
+  $$("#vj-list .dia-row").forEach(r=>r.onclick=()=>openDet(+r.dataset.opp));
+}
+
+/* ---- Notificaciones (campana) ---- */
+function goVendPane(p){ setRol("vend"); vendPane=p; $$("#vend-tabs .subtab").forEach(x=>x.classList.toggle("on",x.dataset.vpane===p)); $$(".vpane").forEach(pn=>pn.classList.remove("on")); $("#vpane-"+p).classList.add("on"); }
+function renderNotif(){
+  const mine=OPP.filter(o=>o.v===curV);
+  const atras=mine.filter(o=>isActiva(o)&&diasSinContacto(o)>STALE_DAYS).length;
+  const pronto=mine.filter(o=>isActiva(o)&&o.etapa!=="reserva"&&o.fviaje>=0&&o.fviaje<=SOON_DAYS).length;
+  const saldos=mine.filter(o=>(o.etapa==="reserva"||o.etapa==="ganada")&&(o.monto-(o.cobrado||0))>0.5&&o.fviaje<=10).length;
+  const recompra=mine.filter(o=>o.etapa==="ganada"&&o.fviaje<0&&!(o.pv||[]).includes("recompra")).length;
+  const total=atras+pronto+saldos+recompra;
+  const bb=$("#bell-badge"); if(bb) bb.textContent = total||"";
+  const item=(n,t,ico)=> n?`<div class="notif-item" data-go="dia">${ico} ${t}<span class="notif-n">${n}</span></div>`:"";
+  const nf=$("#notif"); if(nf) nf.innerHTML=`<div class="notif-hd">🔔 Tenés ${total} cosa${total!==1?"s":""} para hoy</div>${ item(atras,"Seguimientos atrasados","⏰")+item(pronto,"Viajan pronto sin reservar","✈")+item(saldos,"Saldos por cobrar","💵")+item(recompra,"Para recompra","🔁") || `<div class="notif-item" style="cursor:default;color:var(--gris)">Todo al día 🎉</div>`}`;
+}
+
 /* ---- vista LISTA (alternativa al kanban; para comparar) ---- */
 const sList={sort:"dias", dir:-1};
 function renderList(mine){
@@ -843,6 +973,20 @@ function parsePaste(txt){
   if(m=txt.match(/(?:u\$s|usd|\$|presupuesto[^\d]{0,15}|cerca de[^\d]{0,8})\s*([\d.]{3,7})/i)) out.monto=parseInt(m[1].replace(/\./g,""),10);
   return out;
 }
+
+/* historial de cotizaciones (varias por venta) + viajes anteriores del cliente */
+function cotsHTML(o){
+  const c=o.cotis||[];
+  return `<div class="hist"><div class="hist-hd">📄 Historial de cotizaciones <span class="mini" style="font-weight:600">· ${c.length}</span></div>${
+    c.length? c.map(x=>`<div class="hist-row"><div><b>${esc(x.nota)}</b><div class="mini">${esc(x.fecha)}</div></div><span class="hist-monto">${usd(x.monto)}</span></div>`).join("")
+    : `<div class="mini" style="padding:4px 0 2px">Todavía no le hiciste cotizaciones. Usá "Cotizar y enviar".</div>`}</div>`;
+}
+function previosHTML(o){
+  const p=o.previos||[];
+  if(!p.length) return `<details class="prev"><summary>✈ Viajes anteriores · cliente nuevo</summary><div class="mini" style="padding:6px 2px 10px">Es la primera vez que viaja con nosotros.</div></details>`;
+  const tot=p.reduce((s,x)=>s+x.monto,0);
+  return `<details class="prev"><summary>✈ Viajes anteriores · ${p.length} · ${usd(tot)} histórico</summary>${p.map(x=>`<div class="hist-row"><div><b>${esc(x.dest)}</b><div class="mini">${x.anio}${x.pax?" · "+x.pax+" pax":""}</div></div><span class="hist-monto">${usd(x.monto)}</span></div>`).join("")}</details>`;
+}
 function openDet(id){
   const o=OPP.find(x=>x.id===id); const v=VMAP[o.v]; const st=STAGE[o.etapa];
   const dias=diasSinContacto(o);
@@ -881,6 +1025,8 @@ function openDet(id){
         </div>
         <div class="ct-act"><a class="cta wa" id="d-wa">💬 WhatsApp</a><a class="cta" id="d-call">📞 Llamar</a></div>
       </div>
+      ${cotsHTML(o)}
+      ${previosHTML(o)}
       <div class="sug"><div class="lbl">✦ Sugerencia de Bitácora</div><p>${sugerir(o)}</p>${o.etapa!=="perdida"?`<button class="btn ghost" id="d-draft" style="margin-top:9px;padding:6px 12px;font-size:12px">✍ Redactar WhatsApp</button><div id="d-draftbox"></div>`:""}</div>
       ${isActiva(o)?`<p class="tl-title">Registrar actividad</p>
       <div class="quick">
@@ -950,6 +1096,7 @@ function openCotizar(id){
   $("#cot-send").onclick=()=>{
     const canal=$("#cot-canal").value;
     o.act.unshift({off:0,tipo:"cotizacion",nota:`Cotización ${usd(vuelo+hotel)} (GWC + hotelería) generada y enviada por ${canal}.`});
+    o.cotis=o.cotis||[]; o.cotis.unshift({fecha:"hoy", monto:vuelo+hotel, nota:"Cotización GWC + hotelería"});
     if(!o.monto) o.monto=vuelo+hotel;
     if(o.etapa==="nueva") o.etapa="cotizada";
     if(o.sla==null) o.sla=0.3;
@@ -1061,6 +1208,13 @@ function drawCharts(stats){
     labels:motKeys, datasets:[{label:"Perdidas", data:motKeys.map(m=>byMot[m]), backgroundColor:"#6b7280", borderRadius:6}]
   },options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
     scales:{x:{beginAtZero:true,ticks:{precision:0},grid:{display:false}},y:{grid:{display:false}}}}});
+
+  charts.evo=new Chart($("#ch-evo"),{data:{labels:EVOLUCION.map(e=>e.mes),
+    datasets:[
+      {type:"bar", label:"Ventas (USD)", data:EVOLUCION.map(e=>e.ventas), backgroundColor:"#cd0039", borderRadius:6, yAxisID:"y", order:2},
+      {type:"line", label:"Actividad (contactos)", data:EVOLUCION.map(e=>e.act), borderColor:"#2563eb", backgroundColor:"#2563eb", tension:.3, yAxisID:"y1", order:1, pointRadius:3}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:12,font:{size:11}}}},
+    scales:{x:{grid:{display:false}}, y:{position:"left",beginAtZero:true,ticks:{callback:v=>"U$S "+k(v)},grid:{color:"#f0ece2"},title:{display:true,text:"ventas"}}, y1:{position:"right",beginAtZero:true,grid:{display:false},title:{display:true,text:"actividad"}}}}});
 
   charts.riesgo=new Chart($("#ch-riesgo"),{type:"bar",data:{
     labels:stats.map(s=>s.v.nom.split(" ")[0]),
