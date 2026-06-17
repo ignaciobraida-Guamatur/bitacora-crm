@@ -146,6 +146,20 @@
   .prev summary{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--gris);cursor:pointer;padding:9px 0;list-style:none}
   .prev summary::-webkit-details-marker{display:none}
   .prev summary::before{content:"▸ ";color:var(--rojo)} .prev[open] summary::before{content:"▾ "}
+  .alert-row{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;margin-bottom:8px;border:1px solid var(--linea);cursor:default}
+  .alert-row[data-go]{cursor:pointer} .alert-row[data-go]:hover{filter:brightness(.98)}
+  .alert-dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .alert-rojo{background:#fff6f6;border-color:#f1d4d4} .alert-rojo .alert-dot{background:var(--rojo)}
+  .alert-warn{background:#fffdf6;border-color:#f0e4c4} .alert-warn .alert-dot{background:var(--warn)}
+  .alert-row > div:nth-child(2){flex:1;font-size:13px}
+  .conv-row{display:flex;align-items:center;gap:12px;margin-bottom:9px}
+  .conv-bar{height:30px;border-radius:7px;display:flex;align-items:center;padding:0 11px;color:#fff;font-weight:700;font-size:12px;min-width:100px;transition:width .4s;white-space:nowrap;overflow:hidden}
+  .conv-meta{font-size:12.5px;color:var(--gris);white-space:nowrap} .conv-meta b{color:var(--tinta);font-size:14px}
+  .conv-step{font-weight:800} .conv-step.low{color:var(--rojo)}
+  .vd-pipe{display:flex;gap:8px} .vd-st{flex:1;background:#fff;border:1px solid var(--linea);border-radius:10px;padding:10px 6px;text-align:center}
+  .vd-n{font-size:20px;font-weight:800} .vd-l{font-size:9.5px;color:var(--gris);font-weight:700;margin-top:2px;line-height:1.2}
+  .vd-dest{display:flex;gap:7px;flex-wrap:wrap} .chip-dest{font-size:12px;font-weight:700;background:#f3eee3;border-radius:999px;padding:4px 11px;color:var(--tinta)}
+  #tab-vend tbody tr:hover{background:#fdf3f5}
   @media(max-width:900px){.osom-leads{grid-template-columns:1fr}}
 
   .board{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;align-items:start}
@@ -352,6 +366,7 @@
 
     <section id="pane-resumen" class="pane on">
       <div class="kpis" id="adm-kpis"></div>
+      <div class="panel" style="margin-bottom:18px"><div class="hd">🚨 Alertas de gerencia <span class="count">· dónde mirar hoy</span></div><div id="adm-alertas" style="padding:10px 12px"></div></div>
       <div class="grid2">
         <div class="card">
           <h3>Nivel de actividad por vendedor <span class="sub">· contactos registrados esta semana (derivado del log, no auto-declarado)</span></h3>
@@ -373,6 +388,14 @@
           <h3>Evolución del equipo <span class="sub">· actividad y ventas, últimos 6 meses</span></h3>
           <div class="chart-box" style="height:230px"><canvas id="ch-evo"></canvas></div>
         </div>
+        <div class="card">
+          <h3>Embudo de conversión <span class="sub">· % que avanza de una etapa a la siguiente</span></h3>
+          <div id="adm-conv" style="margin-top:14px"></div>
+        </div>
+        <div class="card">
+          <h3>Inteligencia de destinos <span class="sub">· dónde está la demanda (USD)</span></h3>
+          <div class="chart-box"><canvas id="ch-destinos"></canvas></div>
+        </div>
       </div>
       <div class="note" id="insight"></div>
     </section>
@@ -389,6 +412,10 @@
             <tbody></tbody>
           </table>
         </div>
+      </div>
+      <p class="hint" style="margin:10px 2px 0">💡 Tocá un vendedor para ver su ficha (pipeline, riesgo y números).</p>
+      <div class="panel" style="margin-top:18px"><div class="hd">Calidad de seguimiento <span class="count">· % de oportunidades al día (sin atraso) y tiempo de 1ª respuesta</span></div>
+        <div style="overflow:auto"><table><thead><tr><th>Vendedor</th><th>Seguimiento al día</th><th>SLA 1ª resp.</th></tr></thead><tbody id="cal-body"></tbody></table></div>
       </div>
     </section>
 
@@ -450,6 +477,7 @@
 
 <div class="scrim" id="scrim-cotizar"><div class="modal" role="dialog" aria-modal="true" id="cotizar"></div></div>
 <div class="scrim" id="scrim-foto"><div class="modal wide" role="dialog" aria-modal="true" id="foto"></div></div>
+<div class="scrim" id="scrim-vend"><div class="modal" role="dialog" aria-modal="true" id="venddet"></div></div>
 
 <div class="toast" id="toast"><span class="ck">✓</span><span id="toast-t"></span></div>
 
@@ -1142,6 +1170,9 @@ function renderAdmin(){
   drawCharts(stats);
   renderScoreTable(stats);
   renderRiesgo(stats);
+  renderAlertas(stats);
+  renderConversion();
+  renderCalidad(stats);
 }
 function kpiHTML(n,l,s="",cls=""){ return `<div class="kpi ${cls}"><div class="n">${n}</div><div class="l">${esc(l)}</div>${s?`<div class="s">${esc(s)}</div>`:""}</div>`; }
 
@@ -1185,6 +1216,12 @@ function drawCharts(stats){
     ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:12,font:{size:11}}}},
     scales:{x:{grid:{display:false}}, y:{position:"left",beginAtZero:true,ticks:{callback:v=>"U$S "+k(v)},grid:{color:"#f0ece2"},title:{display:true,text:"ventas"}}, y1:{position:"right",beginAtZero:true,grid:{display:false},title:{display:true,text:"actividad"}}}}});
 
+  const byDest={}; OPP.filter(o=>o.etapa!=="perdida").forEach(o=>{const r=o.dest.split("—")[0].trim(); byDest[r]=(byDest[r]||0)+o.monto;});
+  const dEntries=Object.entries(byDest).sort((a,b)=>b[1]-a[1]).slice(0,7);
+  charts.destinos=new Chart($("#ch-destinos"),{type:"bar",data:{labels:dEntries.map(e=>e[0]),datasets:[{label:"USD", data:dEntries.map(e=>e[1]), backgroundColor:"#0891b2", borderRadius:6}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>usd(ctx.raw)}}},
+    scales:{x:{beginAtZero:true,ticks:{callback:v=>"U$S "+k(v)},grid:{color:"#f0ece2"}},y:{grid:{display:false}}}}});
+
   charts.riesgo=new Chart($("#ch-riesgo"),{type:"bar",data:{
     labels:stats.map(s=>s.v.nom.split(" ")[0]),
     datasets:[{label:"USD en riesgo", data:stats.map(s=>s.riesgoUSD), backgroundColor:"#cd0039", borderRadius:6}]
@@ -1199,7 +1236,7 @@ function renderScoreTable(stats){
     const cumplCls=cumpl>=70?"g":(cumpl>=40?"":"w");
     const slaTxt = s.sla==null ? '<span class="mini">—</span>' : `<span class="${s.sla<=SLA_TARGET_H?'sla-ok':'sla-bad'}">${s.sla.toFixed(1)} h</span>`;
     const wr = s.winrate==null ? '<span class="mini">s/d</span>' : s.winrate+"%";
-    return `<tr>
+    return `<tr class="vrow" data-vid="${s.v.id}" style="cursor:pointer">
       <td class="name">${esc(s.v.nom)}</td>
       <td><div style="display:flex;align-items:center;gap:9px"><b>${s.actSem}</b><div class="bar" style="width:80px"><i style="width:${Math.round(s.actSem/max*100)}%"></i></div></div></td>
       <td>${s.activas}</td>
@@ -1211,6 +1248,7 @@ function renderScoreTable(stats){
     </tr>`;
   }).join("");
   $("#tab-vend tbody").innerHTML=rows;
+  $$("#tab-vend .vrow").forEach(r=>r.onclick=()=>openVendDetail(r.dataset.vid));
 }
 
 function renderRiesgo(stats){
@@ -1236,6 +1274,76 @@ function renderRiesgo(stats){
       <td><button class="btn ghost" style="padding:6px 11px;font-size:12px" data-opp="${o.id}">Ver</button></td>
     </tr>`; }).join("");
   $$("#tab-riesgo [data-opp]").forEach(b=>b.onclick=()=>openDet(+b.dataset.opp));
+}
+
+/* ---- Alertas de gerencia ---- */
+function goAdmPane(t){ $$("#adm-tabs .subtab").forEach(x=>x.classList.toggle("on",x.dataset.pane===t)); $$(".pane").forEach(p=>p.classList.remove("on")); $("#pane-"+t).classList.add("on"); requestAnimationFrame(()=>Object.values(charts).forEach(c=>{try{c&&c.resize();}catch(e){}})); }
+function renderAlertas(stats){
+  const bajoMeta=stats.filter(s=>(s.ganadoMes/s.v.meta)<0.4);
+  const staleArr=OPP.filter(o=>isActiva(o)&&diasSinContacto(o)>10);
+  const staleUSD=staleArr.reduce((a,o)=>a+o.monto,0);
+  const viajaPronto=OPP.filter(o=>isActiva(o)&&o.etapa!=="reserva"&&o.fviaje>=0&&o.fviaje<=15).length;
+  const sinAct=stats.filter(s=>s.actSem<=2);
+  const items=[];
+  if(bajoMeta.length) items.push({sev:"rojo", txt:`<b>${bajoMeta.length} vendedor${bajoMeta.length>1?"es":""}</b> por debajo del 40% de su meta`, sub:bajoMeta.map(s=>s.v.nom.split(" ")[0]).join(", "), go:"vendedores"});
+  if(staleArr.length) items.push({sev:"rojo", txt:`<b>${usd(staleUSD)}</b> en oportunidades sin contacto hace +10 días`, sub:`${staleArr.length} oportunidades — se están por caer`, go:"riesgo"});
+  if(viajaPronto) items.push({sev:"warn", txt:`<b>${viajaPronto}</b> oportunidades viajan en ≤15 días y no reservaron`, sub:"urgencia de cupo"});
+  if(sinAct.length) items.push({sev:"warn", txt:`<b>${sinAct.length}</b> con muy baja actividad esta semana`, sub:sinAct.map(s=>s.v.nom.split(" ")[0]).join(", "), go:"vendedores"});
+  $("#adm-alertas").innerHTML = items.length ? items.map(a=>`<div class="alert-row alert-${a.sev}" ${a.go?`data-go="${a.go}"`:""}><div class="alert-dot"></div><div><div>${a.txt}</div><div class="mini">${esc(a.sub)}</div></div>${a.go?`<span class="dia-go">›</span>`:""}</div>`).join("") : `<div class="mini" style="padding:8px">Sin alertas — el equipo está al día 🎉</div>`;
+  $$("#adm-alertas [data-go]").forEach(r=>r.onclick=()=>goAdmPane(r.dataset.go));
+}
+
+/* ---- Embudo de conversión (% que avanza por etapa) ---- */
+function renderConversion(){
+  const order=["nueva","cotizada","seguimiento","reserva","ganada"];
+  const live=OPP.filter(o=>o.etapa!=="perdida");
+  const reached=order.map((id,i)=> live.filter(o=>order.indexOf(o.etapa)>=i).length);
+  const base=reached[0]||1;
+  $("#adm-conv").innerHTML = order.map((id,i)=>{
+    const pct=Math.round(reached[i]/base*100);
+    const step= i===0? null : (reached[i-1]? Math.round(reached[i]/reached[i-1]*100):0);
+    return `<div class="conv-row"><div class="conv-bar" style="width:${Math.max(pct,8)}%;background:${STAGE[id].color}">${STAGE[id].t}</div><div class="conv-meta"><b>${reached[i]}</b> · ${pct}%${step!==null?` <span class="conv-step ${step<50?'low':''}">↓${step}%</span>`:""}</div></div>`;
+  }).join("");
+}
+
+/* ---- Calidad de seguimiento por vendedor ---- */
+function renderCalidad(stats){
+  const rows=stats.map(s=>{
+    const act=OPP.filter(o=>o.v===s.v.id&&isActiva(o));
+    const alDia=act.length? Math.round(act.filter(o=>diasSinContacto(o)<=STALE_DAYS).length/act.length*100):100;
+    return {s, alDia};
+  }).sort((a,b)=>b.alDia-a.alDia);
+  $("#cal-body").innerHTML=rows.map(({s,alDia})=>`<tr><td class="name">${esc(s.v.nom)}</td><td><div style="display:flex;align-items:center;gap:9px"><b>${alDia}%</b><div class="bar" style="width:100px"><i class="${alDia>=70?'g':alDia>=40?'':'w'}" style="width:${alDia}%"></i></div></div></td><td>${s.sla==null?'<span class="mini">—</span>':`<span class="${s.sla<=SLA_TARGET_H?'sla-ok':'sla-bad'}">${s.sla.toFixed(1)} h</span>`}</td></tr>`).join("");
+}
+
+/* ---- Drill-down: ficha del vendedor ---- */
+function openVendDetail(vid){
+  const s=vStats(vid); const mine=OPP.filter(o=>o.v===vid);
+  const cumpl=Math.round(s.ganadoMes/s.v.meta*100);
+  const byStage=STAGES.map(st=>({st,n:mine.filter(o=>o.etapa===st.id).length}));
+  const stale=mine.filter(o=>isActiva(o)&&diasSinContacto(o)>STALE_DAYS).sort((a,b)=>diasSinContacto(b)-diasSinContacto(a));
+  const destMap={}; mine.filter(o=>o.etapa!=="perdida").forEach(o=>{const r=o.dest.split("—")[0].trim();destMap[r]=(destMap[r]||0)+1;});
+  const topDest=Object.entries(destMap).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  $("#venddet").innerHTML=`
+    <div class="mhd"><div><h3>${esc(s.v.nom)}</h3><p>${s.activas} activas · ${usd(s.pipe)} en pipeline · ${s.actSem} contactos esta semana</p></div><button class="x" data-vdclose>✕</button></div>
+    <div class="mbody">
+      <div class="facts">
+        <div class="fact"><div class="k">Cumplimiento de meta</div><div class="v">${cumpl}% <span class="mini">(${usd(s.ganadoMes)}/${usd(s.v.meta)})</span></div></div>
+        <div class="fact"><div class="k">Win-rate</div><div class="v">${s.winrate==null?"s/d":s.winrate+"%"}</div></div>
+        <div class="fact"><div class="k">SLA 1ª respuesta</div><div class="v">${s.sla==null?"—":s.sla.toFixed(1)+" h"}</div></div>
+        <div class="fact"><div class="k">Plata en riesgo</div><div class="v" style="color:var(--rojo)">${s.riesgoN?usd(s.riesgoUSD)+" ("+s.riesgoN+")":"—"}</div></div>
+      </div>
+      <p class="tl-title">Pipeline</p>
+      <div class="vd-pipe">${byStage.map(x=>`<div class="vd-st"><div class="vd-n" style="color:${x.st.color}">${x.n}</div><div class="vd-l">${x.st.t}</div></div>`).join("")}</div>
+      <p class="tl-title" style="margin-top:18px">Destinos más trabajados</p>
+      <div class="vd-dest">${topDest.length?topDest.map(d=>`<span class="chip-dest">${esc(d[0])} · ${d[1]}</span>`).join(""):'<span class="mini">—</span>'}</div>
+      <p class="tl-title" style="margin-top:18px">Necesitan seguimiento (${stale.length})</p>
+      ${stale.length?stale.slice(0,6).map(o=>`<div class="dia-row" data-opp="${o.id}"><div class="dia-main"><b>${esc(o.cli)}</b> <span class="mini">${esc(o.dest)}</span></div><span class="stale ${diasSinContacto(o)>9?'bad':''}">${diasSinContacto(o)}d</span><span class="dia-go">›</span></div>`).join(""):'<div class="mini">Todo al día 🎉</div>'}
+    </div>
+    <div class="mfoot"><button class="btn ghost" data-vdclose style="margin-left:auto">Cerrar</button></div>`;
+  $("#scrim-vend").classList.add("on");
+  $$("#venddet [data-vdclose]").forEach(b=>b.onclick=()=>$("#scrim-vend").classList.remove("on"));
+  $$("#venddet .dia-row[data-opp]").forEach(r=>r.onclick=()=>{ $("#scrim-vend").classList.remove("on"); openDet(+r.dataset.opp); });
 }
 
 $$("#adm-tabs .subtab").forEach(t=>t.onclick=()=>{
